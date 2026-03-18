@@ -41,3 +41,30 @@ app.post('/api/generate', (req, res) => {
 
 // Vercel-er jonno eta khub-i guruttopurno (app.listen thakbe na)
 module.exports = app;
+
+module.exports = (req, res) => {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: "Only POST allowed" });
+    }
+
+    try {
+        const { name, relationship, tone, isRoast } = req.body;
+        let message = "";
+        let giftIdea = "";
+
+        if (isRoast) {
+            message = `Eid Mubarak, ${name}! Bhabechilam kono bhalo gift dibo, kintu tomar chehara tai ekta boro joke! 😂`;
+            giftIdea = "Ekta ayna (Mirror), jate nijei dekhe haste paro!";
+        } else if (tone === 'funny') {
+            message = `Eid Mubarak ${name}! Asha kori eibar amar theke Eidi chawa bondho korbe! 💸`;
+            giftIdea = "Ekta khali wallet, karon sob Eidi to ami niye nibo!";
+        } else {
+            message = `Eid Mubarak, ${name}! Wishing you peace, happiness, and sweet moments. ✨`;
+            giftIdea = "Ekta traditional punjabi/kameez ba ek box sweets. 🍬";
+        }
+
+        res.status(200).json({ message, giftIdea });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
+};
