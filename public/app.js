@@ -1,5 +1,3 @@
-// app.js
-
 const form = document.getElementById('generator-form');
 const formSection = document.getElementById('form-section');
 const loading = document.getElementById('loading');
@@ -44,8 +42,8 @@ form.addEventListener('submit', async (e) => {
     loading.classList.remove('hidden');
 
     try {
-        // Use absolute URL to avoid relative path issues
-        const apiURL = `${window.location.origin}/api/generate`;
+        // FIXED: Using relative path for Vercel Serverless Function
+        const apiURL = '/api/generate'; 
 
         const response = await fetch(apiURL, {
             method: 'POST',
@@ -67,7 +65,7 @@ form.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error(error);
-        alert("Oops! Something went wrong. Please try again.");
+        alert("Oops! Something went wrong. Make sure backend is running.");
         resetApp();
     }
 });
@@ -85,7 +83,7 @@ function showResult(name, message, giftIdea) {
 
 // Reset App
 function resetApp() {
-    window.history.pushState({}, '', window.location.pathname); // Clear URL params
+    window.history.pushState({}, '', window.location.pathname);
     form.reset();
     resultSection.classList.add('hidden');
     loading.classList.add('hidden');
@@ -113,7 +111,7 @@ function shareWhatsApp() {
 // Copy Link
 function copyLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
-        alert("Link copied to clipboard! Send it to your friend.");
+        alert("Link copied to clipboard!");
     });
 }
 
@@ -123,19 +121,13 @@ function triggerConfetti() {
         particleCount: 150,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#fbbf24', '#ffffff', '#064e3b'] // Gold, White, Green
+        colors: ['#fbbf24', '#ffffff', '#064e3b']
     });
 }
 
 // Eidi Fun Mode
 function spinEidi() {
-    const options = [
-        "Nobody, you are broke 😭", 
-        "Your rich uncle! 💰", 
-        "Your dad, but he'll take it back for 'safekeeping' 👀", 
-        "You owe ME Eidi! 🫵", 
-        "Your older sibling (miracles happen) ✨"
-    ];
+    const options = ["Nobody, you are broke 😭", "Your rich uncle! 💰", "Your dad! 👀", "You owe ME Eidi! 🫵"];
     const resultText = document.getElementById('eidi-result');
     resultText.classList.remove('hidden');
     
@@ -145,7 +137,6 @@ function spinEidi() {
         count++;
         if (count > 10) {
             clearInterval(interval);
-            resultText.innerText = options[Math.floor(Math.random() * options.length)];
             confetti({ particleCount: 50, spread: 50, origin: { y: 0.8 } });
         }
     }, 100);
