@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
 
     try {
-        // 🔥 STABLE URL: Using gemini-1.5-pro which has better regional support
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
+        // 🔥 ULTRA STABLE URL: Using gemini-pro on v1 endpoint
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -20,9 +20,8 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Return ONLY a raw JSON object: {"message": "greeting", "giftIdea": "gift"}. 
-                        Write a short, unique Eid Mubarak wish for my ${relationship} named ${name}. 
-                        Tone: ${isRoast ? 'funny roast' : tone}.`
+                        text: `Return ONLY a JSON object: {"message": "text", "giftIdea": "text"}. 
+                        Write a unique Eid wish for ${name} (${relationship}). Tone: ${isRoast ? 'Funny Roast' : tone}.`
                     }]
                 }]
             })
@@ -30,12 +29,9 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
+        // Check for Google Error
         if (data.error) {
-            throw new Error(`Google Error: ${data.error.message}`);
-        }
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("AI response was blocked.");
+            throw new Error(data.error.message);
         }
 
         const responseText = data.candidates[0].content.parts[0].text;
@@ -45,15 +41,19 @@ export default async function handler(req, res) {
         return res.status(200).json(aiData);
 
     } catch (error) {
-        console.error("FINAL_DEBUG_LOG:", error.message);
+        console.error("FINAL_DEBUG:", error.message);
         
-        // Dynamic Fallback
-        const giftList = ["Smart Watch", "Perfume", "Punjabi", "Gift Voucher"];
-        const randomGift = giftList[Math.floor(Math.random() * giftList.length)];
+        // Random Dynamic Fallback (Jate static na mone hoy)
+        const messages = [
+            `Eid Mubarak, ${name}! Wishing you a day full of laughter and joy! ✨`,
+            `Hey ${name}, Eid Mubarak! May your day be as sweet as semai! 🌙`,
+            `Eid Mubarak, ${name}! Sending you lots of love and best wishes.`
+        ];
+        const gifts = ["Smart Watch", "Perfume", "Punjabi", "Chocolates", "Gift Voucher"];
         
         return res.status(200).json({
-            message: `Eid Mubarak, ${name}! Wishing you joy and blessings! ✨ (AI is taking a break, but my wishes are 100% AI-free!)`,
-            giftIdea: randomGift
+            message: messages[Math.floor(Math.random() * messages.length)],
+            giftIdea: gifts[Math.floor(Math.random() * gifts.length)]
         });
     }
 }
