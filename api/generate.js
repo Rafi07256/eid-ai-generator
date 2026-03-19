@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
 
     try {
-        // 🔥 Updated URL to use gemini-1.5-flash-latest which is more stable in v1beta
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+        // 🔥 FIXED URL: Using 'v1' and standard model name
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -20,41 +20,42 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Write a unique Eid Mubarak message for ${name} (${relationship}). Tone: ${isRoast ? 'Funny Roast' : tone}. Return ONLY JSON: {"message": "text", "giftIdea": "text"}`
+                        text: `Return ONLY a JSON object: {"message": "unique_eid_wish", "giftIdea": "gift_name"}. 
+                        Write a short Eid wish for ${name} (${relationship}). Tone: ${isRoast ? 'Funny Roast' : tone}.`
                     }]
-                }],
-                generationConfig: {
-                    temperature: 0.9,
-                    topP: 0.95,
-                    maxOutputTokens: 250,
-                }
+                }]
             })
         });
 
         const data = await response.json();
 
+        // Check if Google returned an error
         if (data.error) {
-            console.error("Gemini API Error:", data.error.message);
+            console.error("Google API Error:", data.error.message);
             throw new Error(data.error.message);
         }
 
         // Safety check for candidates
-        if (!data.candidates || !data.candidates[0].content) {
-            throw new Error("AI did not provide a response.");
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error("AI response blocked.");
         }
 
         const responseText = data.candidates[0].content.parts[0].text;
+        
+        // Clean JSON formatting
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         const aiData = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
 
         return res.status(200).json(aiData);
 
     } catch (error) {
-        console.error("Backend Error:", error.message);
-        // Random fallback to make it look dynamic even if AI fails
-        const randomGift = ["Smart Watch", "Perfume Set", "Traditional Dress", "Customized Mug"][Math.floor(Math.random() * 4)];
+        console.error("FINAL ERROR LOG:", error.message);
+        // Random fallback to make it look dynamic even when failing
+        const gifts = ["Smart Watch", "Perfume Set", "Traditional Dress", "Gift Card"];
+        const randomGift = gifts[Math.floor(Math.random() * gifts.length)];
+        
         return res.status(200).json({
-            message: `Eid Mubarak, ${name}! Wishing you a wonderful day filled with laughter and joy! ✨`,
+            message: `Eid Mubarak, ${name}! (AI Error: ${error.message.substring(0, 20)}...) Wishing you joy! ✨`,
             giftIdea: randomGift
         });
     }
