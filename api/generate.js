@@ -11,13 +11,14 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+        // FIXED: Using 'v1' instead of 'v1beta' and updating model path
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Write a short Eid Mubarak greeting for my ${relationship} named ${name}. Tone: ${isRoast ? 'Funny Roast' : tone}. Return ONLY JSON: {"message": "text", "giftIdea": "text"}`
+                        text: `Write a short, unique Eid Mubarak greeting for my ${relationship} named ${name}. Tone: ${isRoast ? 'Funny Roast' : tone}. Return ONLY a JSON object: {"message": "greeting_text", "giftIdea": "gift_name"}`
                     }]
                 }]
             })
@@ -25,17 +26,18 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // 🔥 DEBUGGING: Jodi Gemini error pathay
+        // Error checking
         if (data.error) {
-            throw new Error(`Gemini API Error: ${data.error.message}`);
+            throw new Error(`Gemini Error: ${data.error.message}`);
         }
 
-        // 🔥 SAFE CHECKING: Candidates ache kina dekha
         if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("AI blocked the response or returned nothing.");
+            throw new Error("No response from AI.");
         }
 
         const responseText = data.candidates[0].content.parts[0].text;
+        
+        // JSON parsing from AI text
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         const aiData = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
 
@@ -45,10 +47,10 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error("LOG:", error.message);
+        console.error("AI LOG:", error.message);
         return res.status(200).json({
-            message: `Eid Mubarak, ${name}! (Error: ${error.message})`,
-            giftIdea: "A box of sweets."
+            message: `Eid Mubarak, ${name}! Wishing you a blessed day. ✨`,
+            giftIdea: "A box of traditional sweets."
         });
     }
 }
