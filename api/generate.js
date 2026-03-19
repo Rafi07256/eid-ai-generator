@@ -1,53 +1,48 @@
-export default function handler(req, res) {
-    // Cross-Origin allow korar jonno
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+export default async function handler(req, res) {
+    // CORS configuration
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // OPTIONS request handle kora
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    // Sudhu POST request allow kora
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: "Only POST method is allowed" });
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: "Only POST allowed" });
 
     try {
-        // req.body theke data neya
-        const body = req.body || {};
-        const name = body.name || "Friend";
-        const relationship = body.relationship || "";
-        const tone = body.tone || "normal";
-        const isRoast = body.isRoast || false;
+        const { name = "Friend", relationship = "friend", tone = "normal", isRoast = false } = req.body || {};
 
-        let message = "";
-        let giftIdea = "";
+        // Gemini AI Initializing using your Vercel Environment Variable
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+        // Creating the AI Prompt
+        let prompt = `Write a short, unique Eid Mubarak greeting for my ${relationship} named ${name}. `;
         if (isRoast) {
-            message = `Eid Mubarak, ${name}! Bhabechilam kono bhalo gift dibo, kintu tomar chehara tai ekta boro joke! 😂`;
-            giftIdea = "Ekta ayna (Mirror), jate nijei dekhe haste paro!";
-        } else if (tone === 'funny') {
-            message = `Eid Mubarak ${name}! Asha kori eibar amar theke Eidi chawa bondho korbe! 💸`;
-            giftIdea = "Ekta khali wallet, karon sob Eidi to ami niye nibo!";
-        } else if (tone === 'romantic' || relationship === 'partner') {
-            message = `Eid Mubarak my love, ${name}. Tumi asha tei amar Eid poripurno hoyeche. ❤️`;
-            giftIdea = "Ekta shundor watch ar ekta golap ful (Rose). 🌹";
+            prompt += "Make it a funny roast! Tease them about eating too much or not giving Eidi. ";
+        } else if (tone === 'romantic') {
+            prompt += "Make it sweet and romantic. ";
         } else {
-            message = `Eid Mubarak, ${name}! Wishing you peace, happiness, and a lot of sweet moments with your family. ✨`;
-            giftIdea = "Ekta traditional punjabi/kameez ba ek box premium sweets. 🍬";
+            prompt += "Make it warm and traditional. ";
         }
+        
+        prompt += `Suggest one creative gift idea. Return ONLY a JSON object: {"message": "greeting", "giftIdea": "gift"}`;
 
-        // Frontend-e response pathano
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+
+        // Cleaning AI response if it contains markdown
+        const cleanJsonText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        const aiData = JSON.parse(cleanJsonText);
+
         return res.status(200).json({
-            message: message,
-            giftIdea: giftIdea
+            message: aiData.message,
+            giftIdea: aiData.giftIdea
         });
 
     } catch (error) {
-        console.error("Function Error:", error);
-        return res.status(500).json({ error: "Server-e kono somossya hoyeche!" });
+        console.error("AI Error:", error);
+        return res.status(500).json({ error: "Failed to generate AI message" });
     }
 }
