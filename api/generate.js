@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
-    // CORS configuration
+    // CORS Headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
@@ -13,28 +13,34 @@ export default async function handler(req, res) {
     try {
         const { name = "Friend", relationship = "friend", tone = "normal", isRoast = false } = req.body || {};
 
-        // Gemini AI Initializing using your Vercel Environment Variable
+        // Vercel-er GEMINI_API_KEY use kora
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Creating the AI Prompt
-        let prompt = `Write a short, unique Eid Mubarak greeting for my ${relationship} named ${name}. `;
+        // AI Prompt
+        let prompt = `Create a short, creative Eid Mubarak greeting for my ${relationship} named ${name}. `;
         if (isRoast) {
-            prompt += "Make it a funny roast! Tease them about eating too much or not giving Eidi. ";
+            prompt += "Make it a lighthearted roast! Tease them about eating too much or forgetting to give Eidi. ";
         } else if (tone === 'romantic') {
-            prompt += "Make it sweet and romantic. ";
+            prompt += "Make it sweet, romantic and poetic. ";
         } else {
-            prompt += "Make it warm and traditional. ";
+            prompt += "Make it warm, traditional and thoughtful. ";
         }
         
-        prompt += `Suggest one creative gift idea. Return ONLY a JSON object: {"message": "greeting", "giftIdea": "gift"}`;
+        prompt += `Also suggest 1 gift idea. 
+        You MUST respond ONLY with a raw JSON object: 
+        {"message": "the_greeting", "giftIdea": "the_gift"}`;
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
 
-        // Cleaning AI response if it contains markdown
-        const cleanJsonText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        const aiData = JSON.parse(cleanJsonText);
+        // 🔥 CRITICAL: AI-er response theke JSON tuku ber korar safe way
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error("AI did not return a valid JSON format");
+        }
+
+        const aiData = JSON.parse(jsonMatch[0]);
 
         return res.status(200).json({
             message: aiData.message,
@@ -43,6 +49,10 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("AI Error:", error);
-        return res.status(500).json({ error: "Failed to generate AI message" });
+        // Fallback response: Jodi AI crash kore, jeno user kichu dekhte pay
+        return res.status(200).json({
+            message: `Eid Mubarak, ${req.body.name || 'Friend'}! Wishing you a day full of joy and blessings. ✨`,
+            giftIdea: "A box of premium traditional sweets (Ladoo or Baklava)."
+        });
     }
 }
