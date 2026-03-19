@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
 
     try {
-        // 🔥 FIXED URL: Using 'v1' and standard model name
+        // 🔥 STABLE URL: Using 'v1' with the exact model identifier
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
         const response = await fetch(url, {
@@ -21,9 +21,14 @@ export default async function handler(req, res) {
                 contents: [{
                     parts: [{
                         text: `Return ONLY a JSON object: {"message": "unique_eid_wish", "giftIdea": "gift_name"}. 
-                        Write a short Eid wish for ${name} (${relationship}). Tone: ${isRoast ? 'Funny Roast' : tone}.`
+                        Write a short, creative Eid wish for ${name} (${relationship}). Tone: ${isRoast ? 'Funny Roast' : tone}.`
                     }]
-                }]
+                }],
+                generationConfig: {
+                    temperature: 0.8,
+                    topP: 0.95,
+                    maxOutputTokens: 256,
+                }
             })
         });
 
@@ -35,14 +40,13 @@ export default async function handler(req, res) {
             throw new Error(data.error.message);
         }
 
-        // Safety check for candidates
         if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("AI response blocked.");
+            throw new Error("No response from AI.");
         }
 
         const responseText = data.candidates[0].content.parts[0].text;
         
-        // Clean JSON formatting
+        // Robust JSON parsing
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         const aiData = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
 
@@ -50,12 +54,12 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("FINAL ERROR LOG:", error.message);
-        // Random fallback to make it look dynamic even when failing
+        // Dynamic fallback message
         const gifts = ["Smart Watch", "Perfume Set", "Traditional Dress", "Gift Card"];
         const randomGift = gifts[Math.floor(Math.random() * gifts.length)];
         
         return res.status(200).json({
-            message: `Eid Mubarak, ${name}! (AI Error: ${error.message.substring(0, 20)}...) Wishing you joy! ✨`,
+            message: `Eid Mubarak, ${name}! (Error: ${error.message.substring(0, 20)}...) Wishing you joy! ✨`,
             giftIdea: randomGift
         });
     }
