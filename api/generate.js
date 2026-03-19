@@ -1,5 +1,5 @@
-module.exports = (req, res) => {
-    // Cross-Origin allow korar jonno (Jodi dorkar hoy)
+export default function handler(req, res) {
+    // Cross-Origin allow korar jonno
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
@@ -10,12 +10,13 @@ module.exports = (req, res) => {
         return res.status(200).end();
     }
 
+    // Sudhu POST request allow kora
     if (req.method !== 'POST') {
         return res.status(405).json({ error: "Only POST method is allowed" });
     }
 
     try {
-        // Jodi req.body kono karone khali ashe, tahole crash thekate default empty object
+        // req.body theke data neya
         const body = req.body || {};
         const name = body.name || "Friend";
         const relationship = body.relationship || "";
@@ -39,6 +40,7 @@ module.exports = (req, res) => {
             giftIdea = "Ekta traditional punjabi/kameez ba ek box premium sweets. 🍬";
         }
 
+        // Frontend-e response pathano
         return res.status(200).json({
             message: message,
             giftIdea: giftIdea
@@ -48,4 +50,4 @@ module.exports = (req, res) => {
         console.error("Function Error:", error);
         return res.status(500).json({ error: "Server-e kono somossya hoyeche!" });
     }
-};
+}
