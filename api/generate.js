@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+    // CORS Headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
@@ -11,14 +12,14 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
 
     try {
-        // FIXED: Using 'v1' instead of 'v1beta' and updating model path
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+        // 🔥 Model name updated to 'gemini-1.5-pro' for better stability
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Write a short, unique Eid Mubarak greeting for my ${relationship} named ${name}. Tone: ${isRoast ? 'Funny Roast' : tone}. Return ONLY a JSON object: {"message": "greeting_text", "giftIdea": "gift_name"}`
+                        text: `Write a short, unique Eid Mubarak greeting for my ${relationship} named ${name}. Tone: ${isRoast ? 'Funny Roast' : tone}. Suggest 1 gift. Output strictly in JSON format: {"message": "text", "giftIdea": "text"}`
                     }]
                 }]
             })
@@ -26,18 +27,15 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // Error checking
+        // Error handling if API fails
         if (data.error) {
-            throw new Error(`Gemini Error: ${data.error.message}`);
-        }
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("No response from AI.");
+            console.error("Gemini Error:", data.error.message);
+            throw new Error(data.error.message);
         }
 
         const responseText = data.candidates[0].content.parts[0].text;
         
-        // JSON parsing from AI text
+        // Clean and Parse JSON
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         const aiData = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
 
@@ -47,10 +45,11 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error("AI LOG:", error.message);
+        console.error("Final Log:", error.message);
+        // User-ke unique fallback deya jate static na mone hoy
         return res.status(200).json({
-            message: `Eid Mubarak, ${name}! Wishing you a blessed day. ✨`,
-            giftIdea: "A box of traditional sweets."
+            message: `Eid Mubarak, ${name}! Wishing you a day full of joy and happiness. (AI is slightly busy, but the wishes are real!)`,
+            giftIdea: "A customized Eid gift hamper or a traditional dress."
         });
     }
 }
