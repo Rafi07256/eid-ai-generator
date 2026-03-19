@@ -11,9 +11,8 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
 
     try {
-        // 🔥 FIXED URL: v1beta bebohar korchi karon ota flash model-er jonno beshi stable
-        // Models path-ta ektu bhabe likha hoyeche jeta 100% kaj korar kotha
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // 🔥 STABLE URL: Using gemini-1.5-pro which has better regional support
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -21,8 +20,9 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Return ONLY a JSON object: {"message": "text", "giftIdea": "text"}. 
-                        Write a short Eid wish for ${name} (${relationship}). Tone: ${isRoast ? 'Funny Roast' : tone}.`
+                        text: `Return ONLY a raw JSON object: {"message": "greeting", "giftIdea": "gift"}. 
+                        Write a short, unique Eid Mubarak wish for my ${relationship} named ${name}. 
+                        Tone: ${isRoast ? 'funny roast' : tone}.`
                     }]
                 }]
             })
@@ -30,14 +30,12 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // Error checking directly from Google
         if (data.error) {
-            console.error("GOOGLE_ERROR:", data.error.message);
-            throw new Error(data.error.message);
+            throw new Error(`Google Error: ${data.error.message}`);
         }
 
         if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("AI blocked response");
+            throw new Error("AI response was blocked.");
         }
 
         const responseText = data.candidates[0].content.parts[0].text;
@@ -47,13 +45,15 @@ export default async function handler(req, res) {
         return res.status(200).json(aiData);
 
     } catch (error) {
-        console.error("FINAL_DEBUG:", error.message);
+        console.error("FINAL_DEBUG_LOG:", error.message);
         
-        // Dynamic fallback jate user blank na dekhe
-        const gifts = ["Smart Watch", "Perfume", "Dress", "Chocolates"];
+        // Dynamic Fallback
+        const giftList = ["Smart Watch", "Perfume", "Punjabi", "Gift Voucher"];
+        const randomGift = giftList[Math.floor(Math.random() * giftList.length)];
+        
         return res.status(200).json({
-            message: `Eid Mubarak, ${name}! Wishing you a day full of joy! ✨ (AI ektu jhamela korche, kintu amar suvechcha thik-i pouchabe!)`,
-            giftIdea: gifts[Math.floor(Math.random() * gifts.length)]
+            message: `Eid Mubarak, ${name}! Wishing you joy and blessings! ✨ (AI is taking a break, but my wishes are 100% AI-free!)`,
+            giftIdea: randomGift
         });
     }
 }
